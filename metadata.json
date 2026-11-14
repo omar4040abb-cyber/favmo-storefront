@@ -1,0 +1,8 @@
+{
+  "name": "FAVMO — Bilingual Streetwear Platform",
+  "description": "FAVMO official bilingual Arabic and English streetwear storefront — CREATE BEYOND LIMITS.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

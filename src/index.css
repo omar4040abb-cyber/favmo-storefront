@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+:root {
+  font-size: var(--favmo-font-size, 16px);
+  --favmo-black: #000000;
+  --favmo-obsidian: #0a0a0a;
+  --favmo-charcoal: #171717;
+  --favmo-graphite: #262626;
+  --favmo-muted: #737373;
+  --favmo-border-light: #e5e5e5;
+  --favmo-border-dark: #262626;
+  --favmo-surface-subtle: #f5f5f5;
+  --favmo-white: #ffffff;
+  --favmo-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --favmo-duration-fast: 180ms;
+  --favmo-duration-base: 320ms;
+  --favmo-duration-slow: 520ms;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    background-color: var(--favmo-white);
+    color: var(--favmo-black);
+  }
+
+  html[lang="en"] body {
+    font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.6;
+  }
+
+  html[lang="ar"] body {
+    font-family: "IBM Plex Sans Arabic", "Tajawal", sans-serif;
+    line-height: 1.75;
+  }
+
+  /* Never apply artificial uppercase or letter-spacing to Arabic */
+  html[lang="ar"] * {
+    letter-spacing: 0 !important;
+  }
+
+  :focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+}
+
+.font-display-en {
+  font-family: "Archivo", "Plus Jakarta Sans", sans-serif;
+}
+
+.font-display-ar {
+  font-family: "Noto Kufi Arabic", "IBM Plex Sans Arabic", sans-serif;
+}
+
+.font-mono-code {
+  font-family: "IBM Plex Mono", monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Monochrome Skeleton Shimmer */
+@keyframes favmoShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.favmo-skeleton {
+  background: linear-gradient(90deg, #f2f2f2 25%, #e5e5e5 50%, #f2f2f2 75%);
+  background-size: 200% 100%;
+  animation: favmoShimmer 1.6s infinite linear;
+}
+
+.favmo-skeleton-dark {
+  background: linear-gradient(90deg, #171717 25%, #262626 50%, #171717 75%);
+  background-size: 200% 100%;
+  animation: favmoShimmer 1.6s infinite linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .favmo-skeleton,
+  .favmo-skeleton-dark {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

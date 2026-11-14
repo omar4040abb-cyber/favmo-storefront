@@ -1,0 +1,540 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Non-PII customer profile preferences and status.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "preferredLocale": { "type": "string", "enum": ["ar", "en"] },
+        "photoUrl": { "type": "string", "maxLength": 1000 },
+        "status": { "type": "string", "enum": ["active", "suspended"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "displayName", "preferredLocale", "status", "createdAt", "updatedAt"]
+    },
+    "UserPrivateInfo": {
+      "title": "UserPrivateInfo",
+      "description": "Isolated PII document for authenticated customers.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "email": { "type": "string", "format": "email", "maxLength": 254 },
+        "phone": { "type": "string", "maxLength": 32 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "updatedAt"]
+    },
+    "UserAddress": {
+      "title": "UserAddress",
+      "description": "Saved customer delivery address.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "label": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "fullName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "phone": { "type": "string", "minLength": 6, "maxLength": 32 },
+        "country": { "type": "string", "minLength": 2, "maxLength": 60 },
+        "governorateCode": { "type": "string", "minLength": 2, "maxLength": 32 },
+        "city": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "area": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "street": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "building": { "type": "string", "minLength": 1, "maxLength": 50 },
+        "floor": { "type": "string", "maxLength": 20 },
+        "apartment": { "type": "string", "maxLength": 20 },
+        "landmark": { "type": "string", "maxLength": 200 },
+        "isDefault": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "label", "fullName", "phone", "country", "governorateCode", "city", "area", "street", "building", "isDefault", "createdAt", "updatedAt"]
+    },
+    "AdminProfile": {
+      "title": "AdminProfile",
+      "description": "Server-managed RBAC administrator profile (owner, manager, staff).",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "email": { "type": "string", "format": "email", "maxLength": 254 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "photoUrl": { "type": "string", "maxLength": 1000 },
+        "role": { "type": "string", "enum": ["owner", "manager", "staff"] },
+        "active": { "type": "boolean" },
+        "bootstrapped": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role", "active", "createdAt", "updatedAt"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Bilingual streetwear product with integer piasters pricing, SKUs, sizes, and SEO fields.",
+      "type": "object",
+      "properties": {
+        "sku": { "type": "string", "maxLength": 64 },
+        "slug": { "type": "string", "minLength": 1, "maxLength": 120, "pattern": "^[a-z0-9\\-]+$" },
+        "collectionId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "subcategoryId": { "type": "string", "maxLength": 128 },
+        "apparelType": { "type": "string", "maxLength": 80 },
+        "name_ar": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "name_en": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "description_ar": { "type": "string", "maxLength": 4000 },
+        "description_en": { "type": "string", "maxLength": 4000 },
+        "specs_ar": { "type": "string", "maxLength": 2000 },
+        "specs_en": { "type": "string", "maxLength": 2000 },
+        "seoTitle_ar": { "type": "string", "maxLength": 160 },
+        "seoTitle_en": { "type": "string", "maxLength": 160 },
+        "seoDescription_ar": { "type": "string", "maxLength": 320 },
+        "seoDescription_en": { "type": "string", "maxLength": 320 },
+        "pricePiasters": { "type": "integer" },
+        "salePricePiasters": { "type": "integer" },
+        "currency": { "type": "string", "enum": ["EGP"] },
+        "status": { "type": "string", "enum": ["draft", "published", "paused", "unavailable", "archived"] },
+        "isNew": { "type": "boolean" },
+        "featured": { "type": "boolean" },
+        "isBestSelling": { "type": "boolean" },
+        "availableSizes": { "type": "array" },
+        "lowStockThreshold": { "type": "integer" },
+        "salesCount": { "type": "integer" },
+        "colors": { "type": "array" },
+        "media": { "type": "array" },
+        "sizeChart": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["slug", "collectionId", "name_ar", "name_en", "pricePiasters", "currency", "status", "isNew", "featured", "createdAt", "updatedAt"]
+    },
+    "Variant": {
+      "title": "Variant",
+      "description": "Independent color and size SKU inventory record with optional price override.",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "sku": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "colorKey": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "colorName_ar": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "colorName_en": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "colorHex": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+        "size": { "type": "string", "enum": ["XS", "S", "M", "L", "XL", "XXL", "3XL"] },
+        "pricePiasters": { "type": "integer" },
+        "stock": { "type": "integer" },
+        "reservedStock": { "type": "integer" },
+        "soldCount": { "type": "integer" },
+        "lowStockThreshold": { "type": "integer" },
+        "active": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId", "sku", "colorKey", "colorName_ar", "colorName_en", "colorHex", "size", "stock", "lowStockThreshold", "active", "updatedAt"]
+    },
+    "Collection": {
+      "title": "Collection",
+      "description": "Bilingual product category or subcategory.",
+      "type": "object",
+      "properties": {
+        "slug": { "type": "string", "minLength": 1, "maxLength": 80, "pattern": "^[a-z0-9\\-]+$" },
+        "parentId": { "type": "string", "maxLength": 128 },
+        "name_ar": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "name_en": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "description_ar": { "type": "string", "maxLength": 2000 },
+        "description_en": { "type": "string", "maxLength": 2000 },
+        "heroImageUrl": { "type": "string", "maxLength": 1000 },
+        "active": { "type": "boolean" },
+        "sortOrder": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["slug", "name_ar", "name_en", "active", "sortOrder", "createdAt", "updatedAt"]
+    },
+    "Banner": {
+      "title": "Banner",
+      "description": "Homepage hero and campaign media banners.",
+      "type": "object",
+      "properties": {
+        "placement": { "type": "string", "enum": ["hero", "campaign", "editorial"] },
+        "mediaType": { "type": "string", "enum": ["placeholder", "image", "video"] },
+        "mediaUrl": { "type": "string", "maxLength": 1000 },
+        "posterUrl": { "type": "string", "maxLength": 1000 },
+        "title_ar": { "type": "string", "maxLength": 200 },
+        "title_en": { "type": "string", "maxLength": 200 },
+        "subtitle_ar": { "type": "string", "maxLength": 500 },
+        "subtitle_en": { "type": "string", "maxLength": 500 },
+        "ctaLabel_ar": { "type": "string", "maxLength": 80 },
+        "ctaLabel_en": { "type": "string", "maxLength": 80 },
+        "ctaHref": { "type": "string", "maxLength": 300 },
+        "active": { "type": "boolean" },
+        "sortOrder": { "type": "integer" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["placement", "mediaType", "active", "sortOrder", "updatedAt"]
+    },
+    "Page": {
+      "title": "Page",
+      "description": "Admin-editable bilingual editorial and policy CMS pages.",
+      "type": "object",
+      "properties": {
+        "slug": { "type": "string", "enum": ["home", "about", "contact", "shipping-returns", "privacy", "terms", "size-guide"] },
+        "title_ar": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "title_en": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "body_ar": { "type": "string", "maxLength": 20000 },
+        "body_en": { "type": "string", "maxLength": 20000 },
+        "metaTitle_ar": { "type": "string", "maxLength": 160 },
+        "metaTitle_en": { "type": "string", "maxLength": 160 },
+        "metaDescription_ar": { "type": "string", "maxLength": 320 },
+        "metaDescription_en": { "type": "string", "maxLength": 320 },
+        "heroMediaType": { "type": "string", "enum": ["placeholder", "image", "video"] },
+        "heroMediaUrl": { "type": "string", "maxLength": 1000 },
+        "heroPosterUrl": { "type": "string", "maxLength": 1000 },
+        "campaignImageUrl": { "type": "string", "maxLength": 1000 },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "updatedBy": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["slug", "title_ar", "title_en", "body_ar", "body_en", "updatedAt"]
+    },
+    "Cart": {
+      "title": "Cart",
+      "description": "Authenticated customer persistent shopping bag.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "items": { "type": "array" },
+        "couponCode": { "type": "string", "maxLength": 40 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "items", "updatedAt"]
+    },
+    "Wishlist": {
+      "title": "Wishlist",
+      "description": "Authenticated customer persistent wishlist.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "productIds": { "type": "array" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "productIds", "updatedAt"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Server-validated immutable order record with minor-unit financials.",
+      "type": "object",
+      "properties": {
+        "orderNumber": { "type": "string", "pattern": "^FAV-[0-9]{4}-[0-9]{6}$" },
+        "userId": { "type": "string", "maxLength": 128 },
+        "idempotencyKey": { "type": "string", "minLength": 8, "maxLength": 128 },
+        "locale": { "type": "string", "enum": ["ar", "en"] },
+        "currency": { "type": "string", "enum": ["EGP"] },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "confirmed", "processing", "shipped", "out_for_delivery", "delivered", "cancelled", "returned", "refunded"]
+        },
+        "paymentMethod": { "type": "string", "enum": ["cod", "instapay", "paymob"] },
+        "paymentStatus": { "type": "string", "enum": ["pending", "awaiting_verification", "paid", "failed", "rejected", "refunded"] },
+        "codCollectionStatus": { "type": "string", "enum": ["not_applicable", "pending_collection", "collected", "failed"] },
+        "subtotalPiasters": { "type": "integer" },
+        "discountPiasters": { "type": "integer" },
+        "shippingPiasters": { "type": "integer" },
+        "codFeePiasters": { "type": "integer" },
+        "totalPiasters": { "type": "integer" },
+        "discountCode": { "type": "string", "maxLength": 40 },
+        "trackingNumber": { "type": "string", "maxLength": 120 },
+        "internalNotes": { "type": "string", "maxLength": 2000 },
+        "itemsSnapshot": { "type": "array" },
+        "shippingAddress": { "type": "object" },
+        "statusTimeline": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["orderNumber", "idempotencyKey", "locale", "currency", "status", "paymentMethod", "paymentStatus", "codCollectionStatus", "subtotalPiasters", "discountPiasters", "shippingPiasters", "codFeePiasters", "totalPiasters", "itemsSnapshot", "shippingAddress", "createdAt", "updatedAt"]
+    },
+    "Counter": {
+      "title": "Counter",
+      "description": "Server-only atomic sequential counter.",
+      "type": "object",
+      "properties": {
+        "value": { "type": "integer" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["value", "updatedAt"]
+    },
+    "Payment": {
+      "title": "Payment",
+      "description": "Server-managed payment transaction and verification log.",
+      "type": "object",
+      "properties": {
+        "orderId": { "type": "string", "maxLength": 128 },
+        "orderNumber": { "type": "string", "maxLength": 32 },
+        "method": { "type": "string", "enum": ["cod", "instapay", "paymob"] },
+        "status": { "type": "string", "enum": ["pending", "awaiting_verification", "paid", "failed", "rejected", "refunded"] },
+        "amountPiasters": { "type": "integer" },
+        "currency": { "type": "string", "enum": ["EGP"] },
+        "providerTransactionId": { "type": "string", "maxLength": 128 },
+        "receiptFilePath": { "type": "string", "maxLength": 500 },
+        "reviewedBy": { "type": "string", "maxLength": 128 },
+        "reviewedAt": { "type": "string", "format": "date-time" },
+        "rejectionReason": { "type": "string", "maxLength": 500 },
+        "webhookEventIds": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["orderId", "orderNumber", "method", "status", "amountPiasters", "currency", "createdAt", "updatedAt"]
+    },
+    "Discount": {
+      "title": "Discount",
+      "description": "Server-evaluated discount code.",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string", "minLength": 2, "maxLength": 40, "pattern": "^[A-Z0-9_\\-]+$" },
+        "type": { "type": "string", "enum": ["percentage", "fixed", "free_shipping"] },
+        "value": { "type": "integer" },
+        "minOrderPiasters": { "type": "integer" },
+        "maxDiscountPiasters": { "type": "integer" },
+        "startsAt": { "type": "string", "format": "date-time" },
+        "endsAt": { "type": "string", "format": "date-time" },
+        "usageLimit": { "type": "integer" },
+        "usedCount": { "type": "integer" },
+        "perCustomerLimit": { "type": "integer" },
+        "eligibleProductIds": { "type": "array" },
+        "eligibleCollectionIds": { "type": "array" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["code", "type", "value", "usedCount", "active", "createdAt", "updatedAt"]
+    },
+    "DiscountRedemption": {
+      "title": "DiscountRedemption",
+      "description": "Per-customer discount redemption tracking.",
+      "type": "object",
+      "properties": {
+        "discountId": { "type": "string", "maxLength": 128 },
+        "code": { "type": "string", "maxLength": 40 },
+        "orderId": { "type": "string", "maxLength": 128 },
+        "customerKey": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["discountId", "code", "orderId", "customerKey", "createdAt"]
+    },
+    "ShippingZone": {
+      "title": "ShippingZone",
+      "description": "Admin-managed shipping zone fees and thresholds.",
+      "type": "object",
+      "properties": {
+        "name_ar": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "name_en": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "governorateCodes": { "type": "array" },
+        "feePiasters": { "type": "integer" },
+        "codFeePiasters": { "type": "integer" },
+        "freeShippingThresholdPiasters": { "type": "integer" },
+        "estimatedDaysMin": { "type": "integer" },
+        "estimatedDaysMax": { "type": "integer" },
+        "active": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name_ar", "name_en", "governorateCodes", "active", "updatedAt"]
+    },
+    "Governorate": {
+      "title": "Governorate",
+      "description": "Preloaded 27 Egyptian governorates mapped to shipping zones.",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string", "minLength": 2, "maxLength": 32, "pattern": "^[A-Z0-9_\\-]+$" },
+        "name_ar": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "name_en": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "zoneId": { "type": "string", "maxLength": 128 },
+        "active": { "type": "boolean" },
+        "sortOrder": { "type": "integer" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["code", "name_ar", "name_en", "active", "sortOrder", "updatedAt"]
+    },
+    "StockMovement": {
+      "title": "StockMovement",
+      "description": "Immutable inventory movement audit trail.",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string", "maxLength": 128 },
+        "variantId": { "type": "string", "maxLength": 128 },
+        "sku": { "type": "string", "maxLength": 64 },
+        "previousQuantity": { "type": "integer" },
+        "newQuantity": { "type": "integer" },
+        "delta": { "type": "integer" },
+        "reason": { "type": "string", "maxLength": 120 },
+        "orderId": { "type": "string", "maxLength": 128 },
+        "actorUid": { "type": "string", "maxLength": 128 },
+        "actorRole": { "type": "string", "maxLength": 32 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId", "variantId", "sku", "previousQuantity", "newQuantity", "delta", "reason", "actorUid", "createdAt"]
+    },
+    "Subscriber": {
+      "title": "Subscriber",
+      "description": "Newsletter subscription record.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email", "maxLength": 254 },
+        "locale": { "type": "string", "enum": ["ar", "en"] },
+        "status": { "type": "string", "enum": ["subscribed", "unsubscribed"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "locale", "status", "createdAt"]
+    },
+    "ContactMessage": {
+      "title": "ContactMessage",
+      "description": "Customer inquiry record.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "email": { "type": "string", "format": "email", "maxLength": 254 },
+        "phone": { "type": "string", "maxLength": 32 },
+        "subject": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "message": { "type": "string", "minLength": 1, "maxLength": 4000 },
+        "locale": { "type": "string", "enum": ["ar", "en"] },
+        "status": { "type": "string", "enum": ["new", "read", "resolved"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "email", "subject", "message", "locale", "status", "createdAt"]
+    },
+    "Setting": {
+      "title": "Setting",
+      "description": "Public storefront and non-secret payment/media configuration.",
+      "type": "object",
+      "properties": {
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "updatedBy": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["updatedAt", "updatedBy"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Server-only immutable admin action audit trail.",
+      "type": "object",
+      "properties": {
+        "actorUid": { "type": "string", "maxLength": 128 },
+        "actorRole": { "type": "string", "enum": ["owner", "manager", "staff"] },
+        "action": { "type": "string", "maxLength": 120 },
+        "targetCollection": { "type": "string", "maxLength": 80 },
+        "targetId": { "type": "string", "maxLength": 128 },
+        "previousValue": { "type": "object" },
+        "newValue": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["actorUid", "actorRole", "action", "targetCollection", "targetId", "createdAt"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Authenticated customer product rating and comment.",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "authorName": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "rating": { "type": "integer" },
+        "comment": { "type": "string", "minLength": 2, "maxLength": 2000 },
+        "status": { "type": "string", "enum": ["approved", "pending", "hidden"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId", "userId", "authorName", "rating", "comment", "status", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Non-PII customer profile preferences."
+    },
+    "/users/{userId}/private/{docId}": {
+      "schema": { "$ref": "#/entities/UserPrivateInfo" },
+      "description": "PII-isolated customer contact details."
+    },
+    "/users/{userId}/addresses/{addressId}": {
+      "schema": { "$ref": "#/entities/UserAddress" },
+      "description": "Customer saved delivery addresses."
+    },
+    "/adminProfiles/{uid}": {
+      "schema": { "$ref": "#/entities/AdminProfile" },
+      "description": "Admin role assignment profiles (owner, manager, staff)."
+    },
+    "/products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Storefront product catalog."
+    },
+    "/variants/{variantId}": {
+      "schema": { "$ref": "#/entities/Variant" },
+      "description": "Product SKU variants and stock levels."
+    },
+    "/collections/{collectionId}": {
+      "schema": { "$ref": "#/entities/Collection" },
+      "description": "Product collections."
+    },
+    "/banners/{bannerId}": {
+      "schema": { "$ref": "#/entities/Banner" },
+      "description": "Hero and campaign media banners."
+    },
+    "/pages/{pageSlug}": {
+      "schema": { "$ref": "#/entities/Page" },
+      "description": "Bilingual editable CMS pages."
+    },
+    "/carts/{userId}": {
+      "schema": { "$ref": "#/entities/Cart" },
+      "description": "Authenticated customer persistent carts."
+    },
+    "/wishlists/{userId}": {
+      "schema": { "$ref": "#/entities/Wishlist" },
+      "description": "Authenticated customer persistent wishlists."
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/Order" },
+      "description": "Server-generated immutable orders."
+    },
+    "/counters/{counterId}": {
+      "schema": { "$ref": "#/entities/Counter" },
+      "description": "Server-only transactional counters."
+    },
+    "/payments/{paymentId}": {
+      "schema": { "$ref": "#/entities/Payment" },
+      "description": "Server-managed payment and InstaPay receipt records."
+    },
+    "/discounts/{discountId}": {
+      "schema": { "$ref": "#/entities/Discount" },
+      "description": "Server-evaluated discount rules."
+    },
+    "/discountRedemptions/{redemptionId}": {
+      "schema": { "$ref": "#/entities/DiscountRedemption" },
+      "description": "Per-customer discount redemption logs."
+    },
+    "/shippingZones/{zoneId}": {
+      "schema": { "$ref": "#/entities/ShippingZone" },
+      "description": "Shipping fee zones and thresholds."
+    },
+    "/governorates/{governorateCode}": {
+      "schema": { "$ref": "#/entities/Governorate" },
+      "description": "All 27 Egyptian governorates."
+    },
+    "/stockMovements/{movementId}": {
+      "schema": { "$ref": "#/entities/StockMovement" },
+      "description": "Inventory adjustment audit trail."
+    },
+    "/subscribers/{subscriberId}": {
+      "schema": { "$ref": "#/entities/Subscriber" },
+      "description": "Newsletter subscription records."
+    },
+    "/contactMessages/{messageId}": {
+      "schema": { "$ref": "#/entities/ContactMessage" },
+      "description": "Customer contact submissions."
+    },
+    "/settings/{settingKey}": {
+      "schema": { "$ref": "#/entities/Setting" },
+      "description": "Storefront configuration settings."
+    },
+    "/auditLogs/{logId}": {
+      "schema": { "$ref": "#/entities/AuditLog" },
+      "description": "Immutable admin action audit trail."
+    },
+    "/reviews/{reviewId}": {
+      "schema": { "$ref": "#/entities/Review" },
+      "description": "Customer product reviews and admin moderation."
+    }
+  }
+}

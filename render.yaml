@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: favmo-storefront
+    runtime: node
+    plan: free
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    startCommand: pnpm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 24.22.1
+      - key: NODE_ENV
+        value: production
+      - key: OWNER_ADMIN_EMAIL
+        sync: false
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: EMAIL_ENABLED
+        value: "false"
+      - key: PAYMOB_ENABLED
+        value: "false"
