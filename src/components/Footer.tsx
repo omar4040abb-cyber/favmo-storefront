@@ -4,6 +4,7 @@ import { useLocale } from '../contexts/LocaleContext';
 import { useStoreSettings } from '../contexts/StoreSettingsContext';
 import { DISPLAY_CURRENCIES, getDisplayCurrency, type DisplayCurrency } from '../lib/currency';
 import { BrandLogo } from './BrandLogo';
+import { InstallAppButton } from './InstallAppButton';
 
 export function Footer() {
   const { locale, t, switchLocale, localePath } = useLocale();
@@ -69,6 +70,7 @@ export function Footer() {
                 {DISPLAY_CURRENCIES.map((code) => <option key={code} value={code}>{code}</option>)}
               </select>
             </label>
+            <InstallAppButton />
             {currency !== 'EGP' && (
               <p className="max-w-xs text-[11px] leading-relaxed text-neutral-500">
                 {locale === 'ar'
