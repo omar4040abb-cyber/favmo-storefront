@@ -108,19 +108,19 @@ export function InstallAppButton() {
       </button>
 
       {showInstallSheet && (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/65 p-3 sm:items-center sm:p-6" role="presentation">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 sm:p-6" role="presentation">
           <section
             role="dialog"
             aria-modal="true"
             aria-labelledby="favmo-install-title"
             dir={isArabic ? 'rtl' : 'ltr'}
-            className="w-full max-w-md border border-neutral-700 bg-[#090909] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-white shadow-2xl sm:p-7"
+            className="w-full max-w-md rounded-2xl border border-neutral-700 bg-[#090909] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-white shadow-2xl sm:p-7"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="mb-2 text-[10px] uppercase tracking-[0.28em] text-neutral-400">FAVMO</p>
                 <h2 id="favmo-install-title" className="text-xl font-semibold">
-                  {isArabic ? 'تجربة FAVMO على هاتفك' : 'FAVMO on your phone'}
+                  {isArabic ? 'تثبيت FAVMO على هاتفك' : 'Install FAVMO on your phone'}
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-neutral-300">
                   {isArabic
@@ -132,14 +132,14 @@ export function InstallAppButton() {
                 type="button"
                 onClick={dismiss}
                 aria-label={isArabic ? 'إغلاق' : 'Close'}
-                className="shrink-0 p-2 text-neutral-400 hover:text-white"
+                className="shrink-0 rounded-full p-2 text-neutral-400 transition-colors hover:bg-white/10 hover:text-white"
               >
                 <X className="h-5 w-5" aria-hidden="true" />
               </button>
             </div>
 
             {showManualSteps && (
-              <div className="mt-5 border border-neutral-700 bg-neutral-950 p-4 text-sm leading-7 text-neutral-200" role="status">
+                <div className="mt-5 rounded-xl border border-neutral-700 bg-neutral-950 p-4 text-sm leading-7 text-neutral-200" role="status">
                 {isIOS ? (
                   <p className="flex items-start gap-2">
                     <Share className="mt-1 h-4 w-4 shrink-0" aria-hidden="true" />
@@ -159,7 +159,7 @@ export function InstallAppButton() {
               <button
                 type="button"
                 onClick={install}
-                className="inline-flex min-h-12 items-center justify-center gap-2 bg-white px-4 py-3 text-sm font-medium text-black transition-colors hover:bg-neutral-200"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-black transition-colors hover:bg-neutral-200"
               >
                 <Download className="h-4 w-4" aria-hidden="true" />
                 {isArabic ? 'تثبيت التطبيق' : 'Install app'}
@@ -167,7 +167,7 @@ export function InstallAppButton() {
               <button
                 type="button"
                 onClick={dismiss}
-                className="min-h-12 border border-neutral-700 px-4 py-3 text-sm text-neutral-200 transition-colors hover:border-white"
+                className="min-h-12 rounded-lg border border-neutral-700 px-4 py-3 text-sm text-neutral-200 transition-colors hover:border-white"
               >
                 {isArabic ? 'ليس الآن' : 'Not now'}
               </button>
