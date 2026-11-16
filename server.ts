@@ -2257,6 +2257,11 @@ async function createServer() {
     res.redirect(302, `/${preferred}`);
   });
 
+  // Google Search Console HTML-file ownership verification.
+  app.get('/google645c87917badba30.html', (_req: Request, res: Response) => {
+    res.sendFile(path.join(__dirname, 'dist', 'google645c87917badba30.html'));
+  });
+
   app.use('*', async (req: Request, res: Response, next) => {
     if (req.originalUrl.startsWith('/api/')) {
       res.status(404).json({ ok: false, error: 'API_NOT_FOUND' });
