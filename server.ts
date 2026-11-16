@@ -31,6 +31,7 @@ const OWNER_ADMIN_EMAIL = (process.env.OWNER_ADMIN_EMAIL || '').trim().toLowerCa
 interface FirebaseAppletConfig {
   projectId: string;
   firestoreDatabaseId: string;
+  storageBucket?: string;
 }
 
 const firebaseConfig: FirebaseAppletConfig = JSON.parse(
@@ -82,7 +83,11 @@ async function persistUploadedFile(
   buffer: Buffer,
   mime: string
 ): Promise<string> {
-  const bucketName = process.env.FIREBASE_STORAGE_BUCKET?.trim();
+  // Use the app's Firebase bucket by default so uploads made from localhost
+  // are stored centrally and can be viewed by every customer/device. Allow
+  // deployments to override it without putting bucket configuration in code.
+  const bucketName =
+    process.env.FIREBASE_STORAGE_BUCKET?.trim() || firebaseConfig.storageBucket?.trim();
   if (bucketName) {
     const token = crypto.randomUUID();
     const objectPath = `${folder}/${filename}`;
