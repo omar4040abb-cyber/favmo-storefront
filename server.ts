@@ -31,7 +31,6 @@ const OWNER_ADMIN_EMAIL = (process.env.OWNER_ADMIN_EMAIL || '').trim().toLowerCa
 interface FirebaseAppletConfig {
   projectId: string;
   firestoreDatabaseId: string;
-  storageBucket?: string;
 }
 
 const firebaseConfig: FirebaseAppletConfig = JSON.parse(
@@ -83,11 +82,37 @@ async function persistUploadedFile(
   buffer: Buffer,
   mime: string
 ): Promise<string> {
-  // Use the app's Firebase bucket by default so uploads made from localhost
-  // are stored centrally and can be viewed by every customer/device. Allow
-  // deployments to override it without putting bucket configuration in code.
-  const bucketName =
-    process.env.FIREBASE_STORAGE_BUCKET?.trim() || firebaseConfig.storageBucket?.trim();
+  // Store admin-managed storefront images in Cloudinary when configured.
+  // The API secret stays server-side in the hosting environment.
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim();
+  const cloudApiKey = process.env.CLOUDINARY_API_KEY?.trim();
+  const cloudApiSecret = process.env.CLOUDINARY_API_SECRET?.trim();
+  if (folder === 'admin' && (cloudName || cloudApiKey || cloudApiSecret)) {
+    if (!cloudName || !cloudApiKey || !cloudApiSecret) {
+      throw new Error('CLOUDINARY_CONFIGURATION_INCOMPLETE');
+    }
+
+    const form = new FormData();
+    form.set('file', `data:${mime};base64,${buffer.toString('base64')}`);
+    form.set('folder', `favmo/${folder}`);
+    const authorization = Buffer.from(`${cloudApiKey}:${cloudApiSecret}`).toString('base64');
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/image/upload`,
+      { method: 'POST', headers: { Authorization: `Basic ${authorization}` }, body: form }
+    );
+    const result = await response.json() as {
+      secure_url?: unknown;
+      error?: { message?: string };
+    };
+    if (!response.ok || typeof result.secure_url !== 'string') {
+      console.error('Cloudinary image upload failed:', response.status, result.error?.message || 'unknown error');
+      throw new Error('CLOUDINARY_UPLOAD_FAILED');
+    }
+    return result.secure_url;
+  }
+
+  // Firebase Storage can still be used if an existing bucket is explicitly configured.
+  const bucketName = process.env.FIREBASE_STORAGE_BUCKET?.trim();
   if (bucketName) {
     const token = crypto.randomUUID();
     const objectPath = `${folder}/${filename}`;
@@ -103,7 +128,7 @@ async function persistUploadedFile(
     return `https://firebasestorage.googleapis.com/v0/b/${encodeURIComponent(bucketName)}/o/${encodeURIComponent(objectPath)}?alt=media&token=${token}`;
   }
 
-  if (IS_PROD) throw new Error('PERSISTENT_STORAGE_NOT_CONFIGURED');
+  if (IS_PROD) throw new Error('IMAGE_STORAGE_NOT_CONFIGURED');
   fs.writeFileSync(path.join(folder === 'admin' ? ADMIN_UPLOADS_DIR : RECEIPT_UPLOADS_DIR, filename), buffer);
   return `/uploads/${folder}/${filename}`;
 }
