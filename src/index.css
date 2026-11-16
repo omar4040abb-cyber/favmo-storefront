@@ -62,6 +62,14 @@
   font-variant-numeric: tabular-nums;
 }
 
+@media (max-width: 640px) {
+  .favmo-hero {
+    min-height: min(92svh, 900px);
+    padding-top: max(6rem, env(safe-area-inset-top));
+    padding-bottom: max(2.5rem, env(safe-area-inset-bottom));
+  }
+}
+
 /* Monochrome Skeleton Shimmer */
 @keyframes favmoShimmer {
   0% {

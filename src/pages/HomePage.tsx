@@ -140,7 +140,7 @@ export function HomePage() {
   return (
     <div>
       {/* 1. Full-Screen Cinematic Hero */}
-      <section className="relative min-h-[92vh] bg-black text-white flex items-end pt-24 pb-16 sm:pb-24 overflow-hidden">
+      <section className="favmo-hero relative min-h-[92vh] bg-black text-white flex items-end pt-24 pb-16 sm:pb-24 overflow-hidden">
         <div className="absolute inset-0">
           <ImageSlot
             mediaType={heroType}

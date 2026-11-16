@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Download, X } from 'lucide-react';
+import { Download, Share, X } from 'lucide-react';
 import { useLocale } from '../contexts/LocaleContext';
 
 interface InstallPromptEvent extends Event {
@@ -7,17 +7,38 @@ interface InstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
 }
 
+const DISMISS_KEY = 'favmo-install-prompt-dismissed';
+
 export function InstallAppButton() {
   const { locale } = useLocale();
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
-  const [showIOSHelp, setShowIOSHelp] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [showInstallSheet, setShowInstallSheet] = useState(false);
+  const [showManualSteps, setShowManualSteps] = useState(false);
   const isArabic = locale === 'ar';
 
   useEffect(() => {
+    const userAgent = navigator.userAgent;
+    const ios = /iphone|ipad|ipod/i.test(userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const mobile = ios || /android|mobile/i.test(userAgent) ||
+      window.matchMedia('(max-width: 767px) and (pointer: coarse)').matches;
     const standalone = window.matchMedia('(display-mode: standalone)').matches ||
       (navigator as Navigator & { standalone?: boolean }).standalone === true;
+
+    setIsIOS(ios);
+    setIsMobile(mobile);
     setIsInstalled(standalone);
+
+    let wasDismissed = false;
+    try {
+      wasDismissed = localStorage.getItem(DISMISS_KEY) === '1';
+    } catch {
+      // The install prompt still works when storage is unavailable.
+    }
+    if (mobile && !standalone && !wasDismissed) setShowInstallSheet(true);
 
     const onInstallPrompt = (event: Event) => {
       event.preventDefault();
@@ -26,7 +47,8 @@ export function InstallAppButton() {
     const onInstalled = () => {
       setIsInstalled(true);
       setInstallPrompt(null);
-      setShowIOSHelp(false);
+      setShowInstallSheet(false);
+      setShowManualSteps(false);
     };
 
     window.addEventListener('beforeinstallprompt', onInstallPrompt);
@@ -37,47 +59,122 @@ export function InstallAppButton() {
     };
   }, []);
 
-  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  if (isInstalled || (!installPrompt && !isIOS)) return null;
+  if (isInstalled || !isMobile) return null;
+
+  const dismiss = () => {
+    setShowInstallSheet(false);
+    setShowManualSteps(false);
+    try {
+      localStorage.setItem(DISMISS_KEY, '1');
+    } catch {
+      // Dismiss for this visit if storage is unavailable.
+    }
+  };
 
   const install = async () => {
     if (!installPrompt) {
-      setShowIOSHelp((visible) => !visible);
+      setShowManualSteps(true);
+      setShowInstallSheet(true);
       return;
     }
     await installPrompt.prompt();
     const choice = await installPrompt.userChoice;
-    if (choice.outcome === 'accepted') setIsInstalled(true);
     setInstallPrompt(null);
+    if (choice.outcome === 'accepted') {
+      setIsInstalled(true);
+      setShowInstallSheet(false);
+    } else {
+      setShowInstallSheet(false);
+      try {
+        localStorage.setItem(DISMISS_KEY, '1');
+      } catch {
+        // The browser's native prompt was dismissed for this visit.
+      }
+    }
   };
 
   return (
-    <div className="space-y-3">
+    <>
       <button
         type="button"
-        onClick={install}
-        className="inline-flex items-center gap-2 border border-neutral-700 px-3 py-2 text-xs text-neutral-200 transition-colors hover:border-white hover:text-white"
+        onClick={() => {
+          setShowManualSteps(false);
+          setShowInstallSheet(true);
+        }}
+        className="inline-flex min-h-11 items-center gap-2 border border-neutral-700 px-3 py-2 text-xs text-neutral-200 transition-colors hover:border-white hover:text-white"
       >
         <Download className="h-4 w-4" aria-hidden="true" />
         {isArabic ? 'ثبّت تطبيق FAVMO' : 'Install FAVMO'}
       </button>
-      {showIOSHelp && (
-        <div className="flex max-w-sm items-start justify-between gap-3 border border-neutral-700 p-3 text-xs leading-6 text-neutral-300" role="status">
-          <p>
-            {isArabic
-              ? 'في Safari، اضغط زر المشاركة ثم اختر «إضافة إلى الشاشة الرئيسية». '
-              : 'In Safari, tap Share, then choose “Add to Home Screen”.'}
-          </p>
-          <button
-            type="button"
-            onClick={() => setShowIOSHelp(false)}
-            aria-label={isArabic ? 'إغلاق' : 'Close'}
-            className="shrink-0 text-neutral-400 hover:text-white"
+
+      {showInstallSheet && (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/65 p-3 sm:items-center sm:p-6" role="presentation">
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="favmo-install-title"
+            dir={isArabic ? 'rtl' : 'ltr'}
+            className="w-full max-w-md border border-neutral-700 bg-[#090909] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-white shadow-2xl sm:p-7"
           >
-            <X className="h-4 w-4" aria-hidden="true" />
-          </button>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="mb-2 text-[10px] uppercase tracking-[0.28em] text-neutral-400">FAVMO</p>
+                <h2 id="favmo-install-title" className="text-xl font-semibold">
+                  {isArabic ? 'تجربة FAVMO على هاتفك' : 'FAVMO on your phone'}
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-neutral-300">
+                  {isArabic
+                    ? 'أضف المتجر إلى الشاشة الرئيسية وافتحه كتطبيق ويب بسهولة.'
+                    : 'Add the store to your home screen and open it like a web app.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={dismiss}
+                aria-label={isArabic ? 'إغلاق' : 'Close'}
+                className="shrink-0 p-2 text-neutral-400 hover:text-white"
+              >
+                <X className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </div>
+
+            {showManualSteps && (
+              <div className="mt-5 border border-neutral-700 bg-neutral-950 p-4 text-sm leading-7 text-neutral-200" role="status">
+                {isIOS ? (
+                  <p className="flex items-start gap-2">
+                    <Share className="mt-1 h-4 w-4 shrink-0" aria-hidden="true" />
+                    <span>{isArabic
+                      ? 'في Safari: اضغط «مشاركة»، ثم «إضافة إلى الشاشة الرئيسية»، وبعدها «إضافة».'
+                      : 'In Safari: tap Share, then “Add to Home Screen”, and tap “Add”.'}</span>
+                  </p>
+                ) : (
+                  <p>{isArabic
+                    ? 'افتح قائمة المتصفح ⋮ ثم اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».'
+                    : 'Open your browser menu ⋮ and choose “Install app” or “Add to Home screen”.'}</p>
+                )}
+              </div>
+            )}
+
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={install}
+                className="inline-flex min-h-12 items-center justify-center gap-2 bg-white px-4 py-3 text-sm font-medium text-black transition-colors hover:bg-neutral-200"
+              >
+                <Download className="h-4 w-4" aria-hidden="true" />
+                {isArabic ? 'تثبيت التطبيق' : 'Install app'}
+              </button>
+              <button
+                type="button"
+                onClick={dismiss}
+                className="min-h-12 border border-neutral-700 px-4 py-3 text-sm text-neutral-200 transition-colors hover:border-white"
+              >
+                {isArabic ? 'ليس الآن' : 'Not now'}
+              </button>
+            </div>
+          </section>
         </div>
       )}
-    </div>
+    </>
   );
 }
