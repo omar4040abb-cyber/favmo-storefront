@@ -248,25 +248,51 @@ function buildSsrMeta(locale: 'ar' | 'en', pathname: string, origin: string) {
   const baseTitle = isAr
     ? 'FAVMO — ابدع بلا حدود.'
     : 'FAVMO — CREATE BEYOND LIMITS.';
-  const baseDescription = isAr
+  let pageDescription = isAr
     ? 'FAVMO علامة ملابس شارع فاخرة ثنائية اللغة. صُمّم لمن يرفضون السير داخل الحدود المعتادة.'
     : 'FAVMO official bilingual Arabic and English streetwear platform. Designed for those who refuse to follow ordinary limits.';
 
   let pageTitle = baseTitle;
   if (pathname.includes('/shop')) {
     pageTitle = isAr ? 'المتجر | FAVMO' : 'Shop | FAVMO';
+    pageDescription = isAr
+      ? 'اكتشف مجموعة FAVMO من ملابس الشارع والهوديز بتصميم عصري وهوية أحادية اللون.'
+      : 'Discover FAVMO streetwear and hoodie collections, designed with a modern monochrome identity.';
   } else if (pathname.includes('/about')) {
     pageTitle = isAr ? 'من نحن | FAVMO' : 'About | FAVMO';
+    pageDescription = isAr
+      ? 'تعرّف على FAVMO، علامة ملابس الشارع التي تصنع هويتها خارج الحدود المعتادة.'
+      : 'Meet FAVMO, a streetwear label creating its own identity beyond ordinary limits.';
   } else if (pathname.includes('/contact')) {
     pageTitle = isAr ? 'تواصل معنا | FAVMO' : 'Contact | FAVMO';
+    pageDescription = isAr
+      ? 'تواصل مع فريق FAVMO لمساعدتك في الطلبات والمقاسات وخدمة العملاء.'
+      : 'Contact the FAVMO team for help with orders, sizing, and customer support.';
   } else if (pathname.includes('/shipping-returns')) {
     pageTitle = isAr ? 'الشحن والاسترجاع | FAVMO' : 'Shipping & Returns | FAVMO';
+    pageDescription = isAr
+      ? 'اطّلع على معلومات الشحن والاستبدال والاسترجاع الخاصة بمتجر FAVMO.'
+      : 'Read FAVMO store information about shipping, exchanges, and returns.';
   } else if (pathname.includes('/privacy')) {
     pageTitle = isAr ? 'سياسة الخصوصية | FAVMO' : 'Privacy Policy | FAVMO';
+    pageDescription = isAr
+      ? 'اقرأ كيف يتعامل متجر FAVMO مع بياناتك وخصوصيتك.'
+      : 'Learn how FAVMO handles your information and privacy.';
   } else if (pathname.includes('/terms')) {
     pageTitle = isAr ? 'الشروط والأحكام | FAVMO' : 'Terms & Conditions | FAVMO';
+    pageDescription = isAr
+      ? 'راجع شروط وأحكام استخدام متجر FAVMO.'
+      : 'Review the terms and conditions for using the FAVMO store.';
   } else if (pathname.includes('/track-order')) {
     pageTitle = isAr ? 'تتبع الطلب | FAVMO' : 'Track Order | FAVMO';
+    pageDescription = isAr
+      ? 'تابع حالة طلبك من متجر FAVMO باستخدام بيانات الطلب.'
+      : 'Check the status of your FAVMO order using your order details.';
+  } else if (pathname.includes('/careers')) {
+    pageTitle = isAr ? 'العمل معنا | FAVMO' : 'Careers | FAVMO';
+    pageDescription = isAr
+      ? 'تعرّف على فرص الانضمام إلى فريق FAVMO وأرسل طلبك.'
+      : 'Explore opportunities to join the FAVMO team and submit an application.';
   } else if (pathname.includes('/admin') || pathname.includes('/favmo-studio-7k4m9q2x')) {
     pageTitle = isAr ? 'لوحة الإدارة | FAVMO' : 'Admin | FAVMO';
   }
@@ -276,35 +302,47 @@ function buildSsrMeta(locale: 'ar' | 'en', pathname: string, origin: string) {
   const arUrl = `${origin}/ar${strippedPath}`;
   const enUrl = `${origin}/en${strippedPath}`;
 
+  const verificationToken = process.env.GOOGLE_SITE_VERIFICATION?.trim();
+  const logoUrl = `${origin}/icons/favmo-512.png`;
   const metaHtml = `
     <link rel="canonical" href="${escapeHtml(canonicalUrl)}" />
     <link rel="alternate" hreflang="ar" href="${escapeHtml(arUrl)}" />
     <link rel="alternate" hreflang="en" href="${escapeHtml(enUrl)}" />
     <meta property="og:locale" content="${isAr ? 'ar_EG' : 'en_US'}" />
     <meta property="og:url" content="${escapeHtml(canonicalUrl)}" />
+    <meta property="og:image" content="${escapeHtml(logoUrl)}" />
+    <meta name="twitter:image" content="${escapeHtml(logoUrl)}" />
+    ${verificationToken ? `<meta name="google-site-verification" content="${escapeHtml(verificationToken)}" />` : ''}
   `;
 
   const jsonLd = {
     '@context': 'https://schema.org',
     '@graph': [
       {
-        '@type': 'Organization',
+        '@type': 'OnlineStore',
+        '@id': `${origin}/#organization`,
         name: 'FAVMO',
+        alternateName: 'FAVMO Store',
         url: origin,
+        logo: logoUrl,
+        description: pageDescription,
         slogan: isAr ? 'ابدع بلا حدود.' : 'CREATE BEYOND LIMITS.',
       },
       {
         '@type': 'WebSite',
+        '@id': `${origin}/#website`,
         name: 'FAVMO',
+        alternateName: 'FAVMO Store',
         url: origin,
         inLanguage: ['ar', 'en'],
+        publisher: { '@id': `${origin}/#organization` },
       },
     ],
   };
 
   const jsonLdHtml = `<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>`;
 
-  return { pageTitle, baseDescription, metaHtml, jsonLdHtml };
+  return { pageTitle, pageDescription, metaHtml, jsonLdHtml };
 }
 
 async function verifySignedInToken(
@@ -471,6 +509,7 @@ async function createServer() {
       '/shop',
       '/about',
       '/contact',
+      '/careers',
       '/shipping-returns',
       '/privacy',
       '/terms',
@@ -501,8 +540,13 @@ async function createServer() {
       }
     }
 
-    const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls
-      .map((u) => `  <url><loc>${escapeHtml(u)}</loc></url>`)
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${urls
+      .map((u) => {
+        const localeMatch = u.match(/\/(ar|en)(?=\/|$)/);
+        const locale = localeMatch?.[1] || 'en';
+        const counterpart = u.replace(/\/(ar|en)(?=\/|$)/, locale === 'ar' ? '/en' : '/ar');
+        return `  <url><loc>${escapeHtml(u)}</loc><xhtml:link rel="alternate" hreflang="${locale}" href="${escapeHtml(u)}" /><xhtml:link rel="alternate" hreflang="${locale === 'ar' ? 'en' : 'ar'}" href="${escapeHtml(counterpart)}" /></url>`;
+      })
       .join('\n')}\n</urlset>`;
 
     res.type('application/xml').send(xml);
@@ -2235,7 +2279,7 @@ async function createServer() {
         : detectLocaleFromRequest(req);
       const dir = locale === 'ar' ? 'rtl' : 'ltr';
       const origin = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
-      const { pageTitle, baseDescription, metaHtml, jsonLdHtml } = buildSsrMeta(
+      const { pageTitle, pageDescription, metaHtml, jsonLdHtml } = buildSsrMeta(
         locale,
         req.originalUrl,
         origin
@@ -2247,9 +2291,13 @@ async function createServer() {
           '<title>FAVMO — CREATE BEYOND LIMITS.</title>',
           `<title>${escapeHtml(pageTitle)}</title>`
         )
-        .replace(
+        .replaceAll(
           'content="FAVMO official bilingual Arabic and English streetwear platform. Designed for those who refuse to follow ordinary limits."',
-          `content="${escapeHtml(baseDescription)}"`
+          `content="${escapeHtml(pageDescription)}"`
+        )
+        .replaceAll(
+          'content="FAVMO — CREATE BEYOND LIMITS."',
+          `content="${escapeHtml(pageTitle)}"`
         )
         .replace('<!--SSR_META_PLACEHOLDER-->', metaHtml)
         .replace('<!--SSR_JSONLD_PLACEHOLDER-->', jsonLdHtml);
