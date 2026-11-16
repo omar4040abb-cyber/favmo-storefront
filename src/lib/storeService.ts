@@ -244,7 +244,9 @@ export async function saveProductWithVariantsAdmin(
           ? Math.trunc(productPayload.salePricePiasters)
           : null,
       currency: 'EGP',
-      status: productPayload.status,
+      // Guard legacy/incomplete product records so Firestore never receives
+      // an undefined status. Draft is the safe fallback for malformed data.
+      status: productPayload.status || 'draft',
       isNew: Boolean(productPayload.isNew),
       featured: Boolean(productPayload.featured),
       isBestSelling: Boolean(productPayload.isBestSelling),

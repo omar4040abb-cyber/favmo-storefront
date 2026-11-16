@@ -300,7 +300,9 @@ export function AdminProductsPanel({
     setDescEn(p.description_en || '');
     setSpecsAr(p.specs_ar || '');
     setSpecsEn(p.specs_en || '');
-    setStatus(p.status);
+    // Older catalog records may not have a status yet. Keep those unpublished
+    // until an admin deliberately chooses a status in the form.
+    setStatus(p.status || 'draft');
     setIsNew(p.isNew);
     setFeatured(p.featured);
     setIsBestSelling(Boolean(p.isBestSelling));
@@ -494,7 +496,7 @@ export function AdminProductsPanel({
           pricePiasters,
           salePricePiasters,
           currency: 'EGP',
-          status,
+          status: status || 'draft',
           isNew,
           featured,
           isBestSelling,
