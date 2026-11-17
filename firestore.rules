@@ -89,7 +89,7 @@ service cloud.firestore {
     function isValidUserAddress(data, userId) {
       return data.keys().hasAll([
           'uid', 'label', 'fullName', 'phone', 'country', 'governorateCode',
-          'city', 'area', 'street', 'building', 'isDefault', 'createdAt', 'updatedAt'
+          'city', 'area', 'street', 'isDefault', 'createdAt', 'updatedAt'
         ])
         && data.keys().hasOnly([
           'uid', 'label', 'fullName', 'phone', 'country', 'governorateCode',
@@ -107,7 +107,7 @@ service cloud.firestore {
         && data.city is string && data.city.size() >= 1 && data.city.size() <= 100
         && data.area is string && data.area.size() >= 1 && data.area.size() <= 100
         && data.street is string && data.street.size() >= 1 && data.street.size() <= 200
-        && data.building is string && data.building.size() >= 1 && data.building.size() <= 50
+        && (!('building' in data) || (data.building is string && data.building.size() <= 50))
         && (!('floor' in data) || (data.floor is string && data.floor.size() <= 20))
         && (!('apartment' in data) || (data.apartment is string && data.apartment.size() <= 20))
         && (!('landmark' in data) || (data.landmark is string && data.landmark.size() <= 200))

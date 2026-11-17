@@ -42,7 +42,7 @@ const checkoutSchema = z.object({
   city: z.string().trim().min(1).max(100),
   area: z.string().trim().min(1).max(100),
   street: z.string().trim().min(2).max(200),
-  building: z.string().trim().min(1).max(50),
+  building: z.string().trim().max(50),
   floor: z.string().trim().max(20).optional(),
   apartment: z.string().trim().max(20).optional(),
   landmark: z.string().trim().max(200).optional(),
@@ -529,7 +529,7 @@ export function CheckoutPage() {
                   </div>
                   <div className="space-y-1.5">
                     <label className="block text-xs font-semibold text-neutral-700">
-                      {t.checkout.building}
+                      {t.checkout.building} <span className="font-normal text-neutral-400">({locale === 'ar' ? 'اختياري' : 'optional'})</span>
                     </label>
                     <input
                       type="text"

@@ -1737,7 +1737,7 @@ async function createServer() {
         city: z.string().trim().min(1).max(100),
         area: z.string().trim().min(1).max(100),
         street: z.string().trim().min(1).max(200),
-        building: z.string().trim().min(1).max(50),
+        building: z.string().trim().max(50).optional().default(''),
         floor: z.string().trim().max(20).optional().default(''),
         apartment: z.string().trim().max(20).optional().default(''),
         landmark: z.string().trim().max(200).optional().default(''),

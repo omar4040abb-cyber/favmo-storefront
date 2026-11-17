@@ -59,6 +59,7 @@ export function AdminOrdersPanel({
   const [trackingNumber, setTrackingNumber] = useState('');
   const [internalNotes, setInternalNotes] = useState('');
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     setSearch(initialSearch);
@@ -66,6 +67,7 @@ export function AdminOrdersPanel({
 
   const openOrder = (ord: Order) => {
     setSelectedOrder(ord);
+    setSaveError(null);
     setNextStatus(ord.status);
     setNextPaymentStatus(ord.paymentStatus);
     setTrackingNumber(ord.trackingNumber || '');
@@ -108,6 +110,7 @@ export function AdminOrdersPanel({
   const handleSaveUpdate = async () => {
     if (!selectedOrder || !user) return;
     setSaving(true);
+    setSaveError(null);
     try {
       const token = await getIdToken();
       await updateOrderAdmin(
@@ -129,6 +132,10 @@ export function AdminOrdersPanel({
       );
       setSelectedOrder(null);
       await onRefresh();
+    } catch {
+      setSaveError(locale === 'ar'
+        ? 'تعذّر حفظ التغييرات. تحقق من اتصال الإنترنت وصلاحية إدارة الطلبات، ثم حاول مرة أخرى.'
+        : 'Could not save these changes. Check your connection and order-management permission, then try again.');
     } finally {
       setSaving(false);
     }
@@ -309,8 +316,10 @@ export function AdminOrdersPanel({
                   — {selectedOrder.shippingAddress?.city}
                 </p>
                 <p className="text-neutral-600">
-                  {selectedOrder.shippingAddress?.area}, {selectedOrder.shippingAddress?.street},{' '}
-                  {selectedOrder.shippingAddress?.building}
+                  {selectedOrder.shippingAddress?.area}, {selectedOrder.shippingAddress?.street}
+                  {selectedOrder.shippingAddress?.building
+                    ? `, ${locale === 'ar' ? 'مبنى' : 'Building'} ${selectedOrder.shippingAddress.building}`
+                    : ''}
                 </p>
               </div>
             </div>
@@ -372,6 +381,7 @@ export function AdminOrdersPanel({
             )}
 
             {/* Status Update Form */}
+            {saveError && <p role="alert" className="border border-red-200 bg-red-50 p-3 text-xs text-red-700">{saveError}</p>}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div className="space-y-1.5">
                 <label className="text-neutral-600 font-medium">{t.tracking.statusLabel}</label>

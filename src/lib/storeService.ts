@@ -435,6 +435,8 @@ export async function updateOrderAdmin(
 ): Promise<void> {
   const nextStatus = updates.status ?? order.status;
   const nextPayStatus = updates.paymentStatus ?? order.paymentStatus;
+  const nextCodCollectionStatus = updates.codCollectionStatus ?? order.codCollectionStatus ??
+    (order.paymentMethod === 'cod' ? 'pending_collection' : 'not_applicable');
   const shouldRestoreStock =
     (nextStatus === 'cancelled' || nextStatus === 'returned' || nextStatus === 'refunded') &&
     order.status !== 'cancelled' &&
@@ -481,7 +483,7 @@ export async function updateOrderAdmin(
       tx.update(orderRef, {
         status: nextStatus,
         paymentStatus: nextPayStatus,
-        codCollectionStatus: updates.codCollectionStatus ?? order.codCollectionStatus,
+        codCollectionStatus: nextCodCollectionStatus,
         trackingNumber: updates.trackingNumber ?? order.trackingNumber ?? '',
         internalNotes: updates.internalNotes ?? order.internalNotes ?? '',
         statusTimeline: nextTimeline,

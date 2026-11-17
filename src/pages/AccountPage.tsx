@@ -806,7 +806,7 @@ export function AccountPage() {
                             </div>
                             <p className="text-sm font-medium">{addr.fullName}</p>
                             <p className="text-xs text-neutral-600">
-                              {addr.street}, {addr.building}, {addr.area}, {addr.city}
+                              {[addr.street, addr.building, addr.area, addr.city].filter(Boolean).join(', ')}
                             </p>
                             <p className="text-xs text-neutral-500" dir="ltr">
                               {addr.phone}
@@ -883,8 +883,7 @@ export function AccountPage() {
                         />
                         <input
                           type="text"
-                          required
-                          placeholder={t.checkout.building}
+                          placeholder={`${t.checkout.building} (${locale === 'ar' ? 'اختياري' : 'optional'})`}
                           value={newAddress.building}
                           onChange={(e) => setNewAddress((a) => ({ ...a, building: e.target.value }))}
                           className="border border-neutral-300 px-3 py-2.5 text-sm"
