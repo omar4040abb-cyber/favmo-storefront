@@ -452,31 +452,36 @@ export async function updateOrderAdmin(
     await runTransaction(db, async (tx) => {
       const orderRef = doc(db, 'orders', order.id);
       const lookupRef = doc(db, 'orderLookups', order.orderNumber);
+      const lookupSnap = await tx.get(lookupRef);
+      const stockRows = shouldRestoreStock
+        ? await Promise.all((order.itemsSnapshot || []).map(async (item) => {
+            const varRef = doc(db, 'variants', item.variantId);
+            const varSnap = await tx.get(varRef);
+            return { item, varRef, varSnap };
+          }))
+        : [];
 
-      if (shouldRestoreStock) {
-        for (const item of order.itemsSnapshot) {
-          const varRef = doc(db, 'variants', item.variantId);
-          const varSnap = await tx.get(varRef);
-          if (varSnap.exists()) {
-            const cur = Number(varSnap.data().stock || 0);
-            tx.update(varRef, {
-              stock: cur + item.quantity,
-              updatedAt: serverTimestamp(),
-            });
-            const movRef = doc(collection(db, 'stockMovements'));
-            tx.set(movRef, {
-              productId: item.productId,
-              variantId: item.variantId,
-              sku: item.sku,
-              previousQuantity: cur,
-              newQuantity: cur + item.quantity,
-              delta: item.quantity,
-              reason: `Order ${order.orderNumber} ${nextStatus}`,
-              orderId: order.id,
-              actorUid,
-              createdAt: serverTimestamp(),
-            });
-          }
+      // Firestore transactions require every read to finish before the first write.
+      for (const { item, varRef, varSnap } of stockRows) {
+        if (varSnap.exists()) {
+          const cur = Number(varSnap.data().stock || 0);
+          tx.update(varRef, {
+            stock: cur + item.quantity,
+            updatedAt: serverTimestamp(),
+          });
+          const movRef = doc(collection(db, 'stockMovements'));
+          tx.set(movRef, {
+            productId: item.productId,
+            variantId: item.variantId,
+            sku: item.sku,
+            previousQuantity: cur,
+            newQuantity: cur + item.quantity,
+            delta: item.quantity,
+            reason: `Order ${order.orderNumber} ${nextStatus}`,
+            orderId: order.id,
+            actorUid,
+            createdAt: serverTimestamp(),
+          });
         }
       }
 
@@ -490,7 +495,6 @@ export async function updateOrderAdmin(
         updatedAt: serverTimestamp(),
       });
 
-      const lookupSnap = await tx.get(lookupRef);
       if (lookupSnap.exists()) {
         tx.update(lookupRef, {
           status: nextStatus,
