@@ -360,6 +360,9 @@ export function AdminMyAccountPanel({
               <thead>
                 <tr className="border-b border-neutral-200 text-neutral-500">
                   <th className="py-2.5 text-start font-medium">
+                    {locale === 'ar' ? 'بواسطة' : 'Actor'}
+                  </th>
+                  <th className="py-2.5 text-start font-medium">
                     {locale === 'ar' ? 'الإجراء' : 'Action'}
                   </th>
                   <th className="py-2.5 text-start font-medium">
@@ -373,6 +376,10 @@ export function AdminMyAccountPanel({
               <tbody className="divide-y divide-neutral-100">
                 {auditLogs.slice(0, 15).map((log) => (
                   <tr key={log.id}>
+                    <td className="py-2.5 text-neutral-700">
+                      <span className="block">{log.actorEmail || log.actorUid}</span>
+                      <span className="text-neutral-400">{log.actorRole}</span>
+                    </td>
                     <td className="py-2.5 font-mono-code font-semibold text-black">{log.action}</td>
                     <td className="py-2.5 text-neutral-600 font-mono-code">
                       {log.targetCollection}/{log.targetId}

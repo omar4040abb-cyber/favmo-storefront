@@ -748,14 +748,20 @@ export async function logAdminActionAdmin(
   targetId: string
 ): Promise<void> {
   try {
-    const ref = doc(collection(db, 'auditLogs'));
-    await setDoc(ref, {
-      actorUid,
-      actorRole: 'owner',
-      action: action.slice(0, 120),
-      targetCollection: targetCollection.slice(0, 80),
-      targetId: targetId.slice(0, 128),
-      createdAt: serverTimestamp(),
+    const user = auth.currentUser;
+    if (!user || user.uid !== actorUid) return;
+    const token = await user.getIdToken();
+    await fetch('/api/admin/audit', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        action: action.slice(0, 120),
+        targetCollection: targetCollection.slice(0, 80),
+        targetId: targetId.slice(0, 128),
+      }),
     });
   } catch {
     // Audit logging is best-effort and must not block primary admin operation

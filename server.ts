@@ -1240,11 +1240,6 @@ async function createServer() {
   );
 
   app.post('/api/admin/audit', async (req: Request, res: Response) => {
-    const owner = await verifyOwnerToken(req);
-    if (!owner) {
-      res.status(403).json({ ok: false, error: 'UNAUTHORIZED_OWNER_ONLY' });
-      return;
-    }
     if (!adminDb) {
       res.status(503).json({ ok: false, blocked: true, error: 'FIREBASE_ADMIN_UNAVAILABLE' });
       return;
@@ -1259,10 +1254,28 @@ async function createServer() {
       res.status(400).json({ ok: false, error: 'INVALID_AUDIT_PAYLOAD' });
       return;
     }
+    const permissionByCollection: Record<string, string> = {
+      products: 'catalog',
+      collections: 'catalog',
+      variants: 'inventory',
+      orders: 'orders',
+      discounts: 'discounts',
+      reviews: 'reviews',
+      settings: 'settings',
+    };
+    const permission = permissionByCollection[parsed.data.targetCollection];
+    const actor = permission
+      ? await verifyAdminPermission(req, permission)
+      : await verifyOwnerToken(req).then((owner) => owner && ({ ...owner, role: 'owner' as const }));
+    if (!actor) {
+      res.status(403).json({ ok: false, error: 'UNAUTHORIZED_AUDIT_ACTION' });
+      return;
+    }
     try {
       const ref = await adminDb.collection('auditLogs').add({
-        actorUid: owner.uid,
-        actorRole: 'owner',
+        actorUid: actor.uid,
+        actorEmail: actor.email,
+        actorRole: actor.role,
         action: parsed.data.action,
         targetCollection: parsed.data.targetCollection,
         targetId: parsed.data.targetId,

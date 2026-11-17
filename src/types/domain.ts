@@ -221,6 +221,7 @@ export interface CustomerSummary {
 export interface AuditLogEntry {
   id: string;
   actorUid: string;
+  actorEmail?: string;
   actorRole: 'owner' | 'manager' | 'staff';
   action: string;
   targetCollection: string;
