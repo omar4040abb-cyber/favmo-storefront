@@ -772,18 +772,54 @@ async function createServer() {
       const permissions = parsed.data.decision === 'approved'
         ? [...new Set(parsed.data.permissions)]
         : [];
+      let staffUser: Awaited<ReturnType<Auth['getUserByEmail']>> | null = null;
+      let passwordSetupRequired = false;
+      const passwordResetEmailRequired = parsed.data.decision === 'approved';
+      let passwordSetupRequestedAt: number | null = null;
+      if (parsed.data.decision === 'approved') {
+        try {
+          staffUser = await adminAuth.getUserByEmail(String(application.email));
+        } catch (error) {
+          const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : '';
+          if (code !== 'auth/user-not-found') throw error;
+        }
+        if (!staffUser) {
+          staffUser = await adminAuth.createUser({
+            email: String(application.email),
+            displayName: String(application.displayName || '').slice(0, 100),
+            password: crypto.randomBytes(32).toString('base64url'),
+            emailVerified: false,
+          });
+        }
+        if (!staffUser.emailVerified) {
+          // Never disclose or email this temporary secret. The candidate gets a Firebase reset link
+          // from the owner dashboard and chooses a private password before staff access activates.
+          await adminAuth.updateUser(staffUser.uid, {
+            password: crypto.randomBytes(32).toString('base64url'),
+          });
+          passwordSetupRequired = true;
+          // Firebase timestamps token invalidation to whole seconds. Start the
+          // setup window on the next second so the password reset itself is
+          // distinguishable from the temporary random password we just set.
+          passwordSetupRequestedAt = Math.floor(Date.now() / 1000) * 1000 + 1000;
+        }
+      }
       const accessRef = adminDb.collection('staffAccess').doc(applicationId);
       const batch = adminDb.batch();
       batch.set(accessRef, {
         email: application.email,
         status: parsed.data.decision,
         permissions,
+        passwordSetupRequired,
+        ...(passwordSetupRequestedAt ? { passwordSetupRequestedAt } : {}),
         updatedAt: FieldValue.serverTimestamp(),
         updatedBy: owner.uid,
       });
       batch.update(applicationRef, {
         status: parsed.data.decision,
         permissions,
+        passwordSetupRequired,
+        ...(passwordSetupRequestedAt ? { passwordSetupRequestedAt } : {}),
         reviewedAt: FieldValue.serverTimestamp(),
         reviewedBy: owner.uid,
         updatedAt: FieldValue.serverTimestamp(),
@@ -792,8 +828,7 @@ async function createServer() {
 
       if (parsed.data.decision === 'approved') {
         try {
-          const staffUser = await adminAuth.getUserByEmail(String(application.email));
-          if (staffUser.emailVerified && staffUser.email && staffUser.email.toLowerCase() !== OWNER_ADMIN_EMAIL) {
+          if (staffUser?.emailVerified && staffUser.email && staffUser.email.toLowerCase() !== OWNER_ADMIN_EMAIL) {
             await adminAuth.setCustomUserClaims(staffUser.uid, {
               ...(staffUser.customClaims || {}),
               favmoStaff: true,
@@ -824,18 +859,126 @@ async function createServer() {
       await sendTransactionalEmail({
         to: String(application.email),
         subject: parsed.data.decision === 'approved' ? 'FAVMO application approved' : 'FAVMO application update',
-        text: `${decisionText} Sign in using this email to access approved staff tools.`,
-        html: `<p>${escapeHtml(decisionText)}</p><p>Sign in using this email to access approved staff tools.</p>`,
+        text: passwordSetupRequired
+          ? `${decisionText} A separate Firebase email will contain a secure link to choose your password. Staff access activates after you set it and sign in.`
+          : `${decisionText} A separate Firebase email will contain a secure password link. Your current password remains valid unless you use that link.`,
+        html: passwordSetupRequired
+          ? `<p>${escapeHtml(decisionText)}</p><p>A separate Firebase email will contain a secure link to choose your password. Staff access activates after you set it and sign in.</p>`
+          : `<p>${escapeHtml(decisionText)}</p><p>A separate Firebase email will contain a secure password link. Your current password remains valid unless you use that link.</p>`,
       });
-      res.json({ ok: true, status: parsed.data.decision });
+      res.json({ ok: true, status: parsed.data.decision, passwordSetupRequired, passwordResetEmailRequired });
     } catch {
       res.status(503).json({ ok: false, error: 'APPLICATION_REVIEW_FAILED' });
     }
   });
 
+  app.post('/api/admin/staff-applications/:applicationId/password-setup', async (req: Request, res: Response) => {
+    const owner = await verifyOwnerToken(req);
+    if (!owner) {
+      res.status(403).json({ ok: false, error: 'UNAUTHORIZED_OWNER_ONLY' });
+      return;
+    }
+    if (!adminDb || !adminAuth) {
+      res.status(503).json({ ok: false, error: 'FIREBASE_ADMIN_UNAVAILABLE' });
+      return;
+    }
+    const applicationId = req.params.applicationId;
+    if (!/^[a-f0-9]{64}$/.test(applicationId)) {
+      res.status(400).json({ ok: false, error: 'INVALID_APPLICATION_ID' });
+      return;
+    }
+
+    try {
+      const applicationRef = adminDb.collection('staffApplications').doc(applicationId);
+      const accessRef = adminDb.collection('staffAccess').doc(applicationId);
+      const [applicationSnap, accessSnap] = await Promise.all([applicationRef.get(), accessRef.get()]);
+      if (!applicationSnap.exists || applicationSnap.data()?.status !== 'approved') {
+        res.status(409).json({ ok: false, error: 'APPLICATION_NOT_APPROVED' });
+        return;
+      }
+      const application = applicationSnap.data()!;
+      const permissionSet = new Set([
+        'catalog', 'inventory', 'orders', 'customers', 'discounts', 'reviews', 'analytics', 'settings', 'content',
+      ]);
+      const storedPermissions = accessSnap.data()?.permissions ?? application.permissions;
+      const permissions = Array.isArray(storedPermissions)
+        ? [...new Set(storedPermissions.filter((permission): permission is string => typeof permission === 'string' && permissionSet.has(permission)))]
+        : [];
+      if (permissions.length === 0) {
+        res.status(409).json({ ok: false, error: 'STAFF_PERMISSIONS_MISSING' });
+        return;
+      }
+
+      let staffUser: Awaited<ReturnType<Auth['getUserByEmail']>> | null = null;
+      try {
+        staffUser = await adminAuth.getUserByEmail(String(application.email));
+      } catch (error) {
+        const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : '';
+        if (code !== 'auth/user-not-found') throw error;
+      }
+
+      const existingRequestedAt = Number(
+        accessSnap.data()?.passwordSetupRequestedAt || application.passwordSetupRequestedAt || 0
+      );
+      let passwordSetupRequired = false;
+      let passwordSetupRequestedAt: number | null = null;
+      if (!staffUser) {
+        staffUser = await adminAuth.createUser({
+          email: String(application.email),
+          displayName: String(application.displayName || '').slice(0, 100),
+          password: crypto.randomBytes(32).toString('base64url'),
+          emailVerified: false,
+        });
+        passwordSetupRequired = true;
+      } else if (!staffUser.emailVerified) {
+        passwordSetupRequired = true;
+        if (application.passwordSetupRequired === true && existingRequestedAt) {
+          passwordSetupRequestedAt = existingRequestedAt;
+        } else {
+          await adminAuth.updateUser(staffUser.uid, {
+            password: crypto.randomBytes(32).toString('base64url'),
+          });
+        }
+      }
+      if (passwordSetupRequired && !passwordSetupRequestedAt) {
+        // Firebase records token invalidation to whole seconds. Put the invite
+        // threshold on the next second so it follows the random temporary secret.
+        passwordSetupRequestedAt = Math.floor(Date.now() / 1000) * 1000 + 1000;
+      }
+
+      if (staffUser.emailVerified) {
+        await adminAuth.setCustomUserClaims(staffUser.uid, {
+          ...(staffUser.customClaims || {}),
+          favmoStaff: true,
+          favmoPermissions: permissions,
+        });
+      }
+      const batch = adminDb.batch();
+      batch.set(accessRef, {
+        email: application.email,
+        status: 'approved',
+        permissions,
+        passwordSetupRequired,
+        ...(passwordSetupRequestedAt ? { passwordSetupRequestedAt } : {}),
+        updatedAt: FieldValue.serverTimestamp(),
+        updatedBy: owner.uid,
+      }, { merge: true });
+      batch.update(applicationRef, {
+        permissions,
+        passwordSetupRequired,
+        ...(passwordSetupRequestedAt ? { passwordSetupRequestedAt } : {}),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      await batch.commit();
+      res.json({ ok: true, email: application.email, passwordSetupRequired });
+    } catch {
+      res.status(503).json({ ok: false, error: 'PASSWORD_SETUP_PREPARATION_FAILED' });
+    }
+  });
+
   app.post('/api/staff/access-sync', async (req: Request, res: Response) => {
     const signedIn = await verifySignedInToken(req);
-    if (!signedIn?.email || !signedIn.emailVerified || !adminDb || !adminAuth) {
+    if (!signedIn?.email || !adminDb || !adminAuth) {
       res.status(401).json({ ok: false, error: 'VERIFIED_ACCOUNT_REQUIRED' });
       return;
     }
@@ -856,7 +999,36 @@ async function createServer() {
         res.status(403).json({ ok: false, error: 'STAFF_PERMISSIONS_MISSING' });
         return;
       }
-      const userRecord = await adminAuth.getUser(signedIn.uid);
+      let userRecord = await adminAuth.getUser(signedIn.uid);
+      const accessData = access.data()!;
+      if (!userRecord.emailVerified) {
+        const requestedAt = Number(accessData.passwordSetupRequestedAt || 0);
+        const passwordResetAt = Date.parse(userRecord.tokensValidAfterTime || '');
+        if (
+          accessData.passwordSetupRequired !== true ||
+          !requestedAt ||
+          !Number.isFinite(passwordResetAt) ||
+          passwordResetAt < requestedAt ||
+          signedIn.authTime < requestedAt
+        ) {
+          res.status(403).json({ ok: false, error: 'STAFF_PASSWORD_SETUP_REQUIRED' });
+          return;
+        }
+        await adminAuth.updateUser(signedIn.uid, { emailVerified: true });
+        userRecord = await adminAuth.getUser(signedIn.uid);
+        const batch = adminDb.batch();
+        batch.update(adminDb.collection('staffAccess').doc(accessId), {
+          passwordSetupRequired: false,
+          passwordSetupCompletedAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+        batch.update(adminDb.collection('staffApplications').doc(accessId), {
+          passwordSetupRequired: false,
+          passwordSetupCompletedAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+        await batch.commit();
+      }
       if (userRecord.customClaims?.favmoStaff !== true || JSON.stringify(userRecord.customClaims?.favmoPermissions) !== JSON.stringify(permissions)) {
         await adminAuth.setCustomUserClaims(signedIn.uid, {
           ...(userRecord.customClaims || {}),

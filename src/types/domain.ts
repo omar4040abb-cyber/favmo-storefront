@@ -25,6 +25,7 @@ export interface StaffApplication {
   experience: string;
   status: 'pending' | 'approved' | 'rejected';
   permissions: AdminPermission[];
+  passwordSetupRequired?: boolean;
   createdAt?: unknown;
 }
 

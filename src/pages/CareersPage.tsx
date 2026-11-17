@@ -53,6 +53,11 @@ export function CareersPage() {
           <p className="text-sm leading-7 text-neutral-400">
             {isAr ? 'أرسل بياناتك، وسيصل طلبك إلى لوحة المالك للمراجعة. لا تُمنح أي صلاحيات دخول قبل الموافقة.' : 'Send your details for the owner to review. No access permissions are granted before approval.'}
           </p>
+          <p className="border-s border-neutral-700 ps-4 text-xs leading-6 text-neutral-500">
+            {isAr
+              ? 'بعد الموافقة، يصلك رابط آمن لإعداد أو تغيير كلمة المرور. تختارها بنفسك ولا يطّلع عليها المدير.'
+              : 'After approval, you receive a secure link to set or reset your password. You choose it privately; the owner cannot see it.'}
+          </p>
         </div>
 
         <form onSubmit={submitApplication} className="space-y-5">

@@ -43,7 +43,7 @@ interface AuthContextValue {
     locale: Locale
   ) => Promise<void>;
   signInGoogle: (locale: Locale) => Promise<void>;
-  sendResetEmail: (email: string) => Promise<void>;
+  sendResetEmail: (email: string, locale?: Locale) => Promise<void>;
   resendVerification: () => Promise<void>;
   getIdToken: () => Promise<string | null>;
   signOut: () => Promise<void>;
@@ -126,7 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       try {
         let token = await nextUser.getIdTokenResult();
-        if (token.claims.favmoOwner !== true && nextUser.emailVerified) {
+        if (token.claims.favmoOwner !== true) {
           try {
             const idToken = await nextUser.getIdToken();
             const response = await fetch('/api/staff/access-sync', {
@@ -199,7 +199,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const verifyAdminSession = useCallback(async () => {
     const currentUser = auth.currentUser;
     if (!currentUser) throw new Error('ADMIN_SESSION_MISSING');
-    if (!currentUser.emailVerified) throw new Error('ADMIN_EMAIL_UNVERIFIED');
 
     try {
       const idToken = await currentUser.getIdToken();
@@ -210,6 +209,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           headers: { Authorization: `Bearer ${idToken}` },
         });
         if (staffResponse.ok) {
+          await currentUser.reload();
           await currentUser.getIdToken(true);
           const refreshed = await currentUser.getIdTokenResult();
           const isStaff = refreshed.claims.favmoStaff === true;
@@ -220,8 +220,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               )
             : []);
           if (isStaff) return true;
+        } else {
+          const staffResult = await staffResponse.json().catch(() => ({})) as { error?: string };
+          if (staffResult.error === 'STAFF_PASSWORD_SETUP_REQUIRED') {
+            throw new Error('ADMIN_STAFF_PASSWORD_SETUP_REQUIRED');
+          }
+          if (staffResult.error === 'STAFF_ACCESS_NOT_APPROVED') {
+            throw new Error('ADMIN_STAFF_NOT_APPROVED');
+          }
         }
       }
+      if (!currentUser.emailVerified) throw new Error('ADMIN_EMAIL_UNVERIFIED');
       const response = await fetch('/api/admin/verify', {
         method: 'POST',
         headers: { Authorization: `Bearer ${idToken}` },
@@ -272,8 +281,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await syncProfileDocument(cred.user, locale);
   }, []);
 
-  const sendResetEmail = useCallback(async (email: string) => {
-    await sendPasswordResetEmail(auth, email.trim());
+  const sendResetEmail = useCallback(async (email: string, locale?: Locale) => {
+    if (locale) auth.languageCode = locale;
+    const target = email.trim();
+    const returnToAdmin = `${window.location.origin}/${locale || 'ar'}/favmo-studio-7k4m9q2x`;
+    try {
+      await sendPasswordResetEmail(auth, target, { url: returnToAdmin });
+    } catch (error) {
+      const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : '';
+      if (code !== 'auth/unauthorized-continue-uri') throw error;
+      await sendPasswordResetEmail(auth, target);
+    }
   }, []);
 
   const resendVerification = useCallback(async () => {
